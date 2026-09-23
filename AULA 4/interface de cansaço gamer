@@ -1,0 +1,72 @@
+import numpy as np
+import streamlit as st
+import tensorflow as tf
+
+# 1. Título e Estilo da Interface
+st.title("🎮 Detector de Sono Gamer")
+st.subheader("Preveja o seu de-buff de cansaço com Inteligência Artificial")
+st.write(
+    "Abaixo, a IA vai treinar com os seus dados de gameplay para entender a sua fadiga."
+)
+
+# 2. Dados do Player (Dicionário de dados)
+X_horas = np.array([1.0, 2.0, 4.0, 6.0, 8.0, 10.0], dtype=float)
+Y_cansaco = np.array([1.0, 2.0, 3.0, 5.0, 8.0, 10.0], dtype=float)
+
+# 3. Criando a Arquitetura da IA (Corrigido: input_shape=[1])
+modelo = tf.keras.Sequential([tf.keras.layers.Dense(units=1, input_shape=[1])])
+modelo.compile(optimizer="adam", loss="mean_squared_error")
+
+# 4. Botão para Treinar a IA na Interface
+if st.button("🚀 Iniciar Treinamento da IA"):
+    progresso = st.progress(0)
+    status = st.empty()
+
+    # Treinando e mostrando a barra de progresso na tela
+    for epoca in range(1, 3001):
+        modelo.train_on_batch(X_horas, Y_cansaco)
+        if epoca % 600 == 0:
+            progresso.progress(epoca / 3000)
+            status.text(
+                f"Calibrando neurônio... Progresso: {epoca}/3000 épocas"
+            )
+
+    st.success("🎯 IA Calibrada e Pronta para o Matchmaking!")
+
+    # Guardamos o modelo na memória do Streamlit para não precisar treinar de novo
+    st.session_state["modelo_treinado"] = modelo
+
+# 5. Se a IA já estiver treinada, libera os controles gráficos para o usuário
+if "modelo_treinado" in st.session_state:
+    st.divider()
+    st.markdown("### 🕹️ Faça sua Previsão de Maratona")
+
+    # Controle Gráfico: Barra deslizante (Slider) para o gamer escolher as horas
+    horas_usuario = st.slider(
+        "Quantas horas seguidas você pretende jogar?",
+        min_value=1,
+        max_value=24,
+        value=12,
+    )
+
+    # Convertendo o valor do slider para o formato que o TensorFlow entende
+    dados_entrada = np.array([[float(horas_usuario)]], dtype=float)
+    resultado_previsao = st.session_state["modelo_treinado"].predict(
+        dados_entrada, verbose=0
+    )
+    nivel_cansaco = float(resultado_previsao[0][0])
+
+    # Exibindo o veredito de forma visual e chamativa
+    st.metric(
+        label="Nível de Cansaço Estimado (Escala 1 a 10)",
+        value=f"{nivel_cansaco:.1f} / 10",
+    )
+
+    # Alertas dinâmicos baseados no cansaço previsto
+    if nivel_cansaco >= 10.0:
+        st.error("🚨 ALERTA: Alt+F4 urgente! Seu boneco vai dormir no teclado.")
+    elif nivel_cansaco >= 7.0:
+        st.warning("⚠️ Cuidado: Seus reflexos caíram. Hora de tomar uma água.")
+    else:
+        st.success("🟢 GG: Energia está safe. Pode continuar o rush!")
+
